@@ -8,6 +8,7 @@
 
 #import "SCRecorder.h"
 #import "SCRecordSession_Internal.h"
+#import <CoreTelephony/CTCallCenter.h>
 #define dispatch_handler(x) if (x != nil) dispatch_async(dispatch_get_main_queue(), x)
 #define kSCRecorderRecordSessionQueueKey "SCRecorderRecordSessionQueue"
 #define kMinTimeBetweenAppend 0.004
@@ -247,6 +248,8 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
                 }
             }
             
+			[self toggleAudioForPhoneCallState];
+
             _audioOutputAdded = NO;
             if (self.audioConfiguration.enabled) {
                 if (_audioOutput == nil) {
@@ -291,6 +294,13 @@ static char* SCRecorderPhotoOptionsContext = "PhotoOptionsContext";
     _error = newError;
     
     return newError == nil;
+}
+
+- (void)toggleAudioForPhoneCallState {
+    // Double check if the phone is calling out, if so, do not enable audio for this session.
+    CTCallCenter *callCenter = [[CTCallCenter alloc] init];
+    // If there is a out-going phone call, disable the audio configuration for this recorder.
+    self.audioConfiguration.enabled = !(callCenter.currentCalls != nil && callCenter.currentCalls.count > 0);
 }
 
 - (BOOL)prepare:(NSError **)error {
